@@ -24,7 +24,7 @@ def load_llm():
     """Memuat LLM dari Google Gemini API."""
     # Kita hanya perlu menginisialisasi model dengan nama dan API key
     # API key akan dibaca secara otomatis dari Streamlit Secrets
-    llm = ChatGoogleGenerativeAI(model="gemini-1.0-pro", temperature=0.3)
+    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.3)
     return llm
 
 # Versi baru yang menggunakan ChromaDB dan tugasnya lebih spesifik
