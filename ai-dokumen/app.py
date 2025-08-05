@@ -39,7 +39,7 @@ def create_vector_store(text_chunks, embedding_model):
 
 def create_qa_chain(vector_store, llm):
     """Membuat QA Chain dengan strategi Map-Reduce dan prompt kustom."""
-    retriever = vector_store.as_retriever()
+    retriever = vector_store.as_retriever(search_kwargs={'k': 4})
 
     # 1. Prompt untuk tahap "Map"
     # Prompt ini akan diterapkan pada setiap potongan dokumen secara individual.
