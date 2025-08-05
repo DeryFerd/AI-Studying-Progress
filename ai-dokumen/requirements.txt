@@ -4,7 +4,7 @@ langchain-community
 torch
 transformers
 sentence-transformers
-chromadb
+faiss-cpu
 PyMuPDF
 accelerate
-sentencepiece
+chromadb
