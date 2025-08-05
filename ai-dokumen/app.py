@@ -37,59 +37,42 @@ def create_vector_store(text_chunks, embedding_model):
     vector_store = Chroma.from_documents(documents=text_chunks, embedding=embedding_model)
     return vector_store
 
+# GANTI SELURUH FUNGSI create_qa_chain DENGAN VERSI FINAL INI
+
 def create_qa_chain(vector_store, llm):
-    """Membuat QA Chain dengan strategi Map-Reduce dan prompt kustom."""
+    """Membuat QA Chain dengan strategi STUFF yang super aman dan terkontrol."""
+    
+    # Kita tetap batasi retriever untuk keamanan absolut
     retriever = vector_store.as_retriever(search_kwargs={'k': 3})
 
-    # 1. Prompt untuk tahap "Map"
-    # Prompt ini akan diterapkan pada setiap potongan dokumen secara individual.
-    map_prompt_template = """
-    Gunakan potongan konteks berikut untuk menjawab pertanyaan di bawah.
-    
+    # Kita kembali ke satu prompt simpel karena "stuff" hanya punya satu langkah
+    prompt_template = """
+    Gunakan potongan konteks berikut untuk menjawab pertanyaan di akhir. Jawablah dengan ringkas dan jelas dalam Bahasa Indonesia.
+    Jika Anda tidak tahu jawabannya, katakan saja Anda tidak tahu.
+
     Konteks:
     {context}
-    
+
     Pertanyaan:
     {question}
-    
-    Jawaban ringkas berdasarkan konteks di atas:
+
+    Jawaban:
     """
-    MAP_PROMPT = PromptTemplate(
-        template=map_prompt_template, 
+    PROMPT = PromptTemplate(
+        template=prompt_template, 
         input_variables=["context", "question"]
     )
 
-    # 2. Prompt untuk tahap "Reduce"
-    # Prompt ini akan menggabungkan semua jawaban dari tahap Map.
-    reduce_prompt_template = """
-    Pertanyaan awal adalah: "{question}"
-    Berikut adalah beberapa jawaban yang ditemukan dari potongan-potongan dokumen yang relevan:
-    ---
-    {summaries}
-    ---
-    Berdasarkan jawaban-jawaban di atas, rangkumlah menjadi satu jawaban akhir yang koheren, lengkap, dan dalam Bahasa Indonesia.
-    
-    Jawaban Akhir yang Lengkap:
-    """
-    REDUCE_PROMPT = PromptTemplate(
-        template=reduce_prompt_template, 
-        input_variables=["summaries", "question"]
-    )
-
-    # 3. Membuat QA Chain dengan konfigurasi yang benar untuk map_reduce
+    # KEMBALI KE "STUFF"
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="map_reduce",
+        chain_type="stuff",
         retriever=retriever,
-        return_source_documents=False, # Kita set False agar jawaban lebih ringkas
-        chain_type_kwargs={
-            "question_prompt": MAP_PROMPT,
-            "combine_prompt": REDUCE_PROMPT
-        }
+        return_source_documents=False,
+        chain_type_kwargs={"prompt": PROMPT}
     )
     
     return qa_chain
-
 # =====================================================================================
 # BAGIAN 2: TAMPILAN APLIKASI STREAMLIT
 # =====================================================================================
