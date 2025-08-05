@@ -8,3 +8,4 @@ faiss-cpu
 PyMuPDF
 accelerate
 chromadb
+pysqlite3-binary
