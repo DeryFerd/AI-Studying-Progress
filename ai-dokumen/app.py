@@ -16,16 +16,15 @@ from langchain_community.vectorstores import Chroma
 
 @st.cache_resource
 def load_llm():
-    """Memuat LLM yang CPU-friendly (Flan-T5)."""
-    # Mengganti model ke yang lebih kecil dan CPU-friendly
-    model_id = "google/flan-t5-base"
+    """Memuat LLM yang sangat ringan dan CPU-friendly (DistilGPT-2)."""
+    # Mengganti model ke yang paling kompatibel
+    model_id = "distilgpt2"
     
-    # Kuantisasi tidak lagi diperlukan, kita hapus konfigurasinya
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForCausalLM.from_pretrained(model_id)
     
-    # Flan-T5 menggunakan task "text2text-generation"
-    pipe = pipeline("text2text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
+    # Task-nya kembali menjadi "text-generation"
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
     return HuggingFacePipeline(pipeline=pipe)
 
 # Versi baru yang menggunakan ChromaDB dan tugasnya lebih spesifik
