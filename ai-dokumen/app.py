@@ -39,7 +39,7 @@ def create_vector_store(text_chunks, embedding_model):
 
 def create_qa_chain(vector_store, llm):
     """Membuat QA Chain dengan strategi Map-Reduce dan prompt kustom."""
-    retriever = vector_store.as_retriever(search_kwargs={'k': 4})
+    retriever = vector_store.as_retriever(search_kwargs={'k': 3})
 
     # 1. Prompt untuk tahap "Map"
     # Prompt ini akan diterapkan pada setiap potongan dokumen secara individual.
@@ -125,7 +125,7 @@ if uploaded_file is not None:
             # 1. Load dan potong dokumen
             loader = PyMuPDFLoader(file_path)
             documents = loader.load()
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
             text_chunks = text_splitter.split_documents(documents)
 
             # 2. Siapkan model embedding
