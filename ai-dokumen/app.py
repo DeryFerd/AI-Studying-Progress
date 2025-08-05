@@ -1,4 +1,3 @@
-
 import streamlit as st
 import torch
 import os
@@ -15,26 +14,18 @@ from langchain_community.vectorstores import FAISS
 # BAGIAN 1: FUNGSI-FUNGSI INTI (MESIN RAG KITA)
 # =====================================================================================
 
-@st.cache_resource # Trik agar model tidak di-load ulang setiap kali ada interaksi
+@st.cache_resource
 def load_llm():
-    """Memuat LLM yang sudah dikuantisasi."""
-    model_id = "mistralai/Mistral-7B-Instruct-v0.2"
+    """Memuat LLM yang CPU-friendly (Flan-T5)."""
+    # Mengganti model ke yang lebih kecil dan CPU-friendly
+    model_id = "google/flan-t5-base"
     
-    quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-    )
-    
+    # Kuantisasi tidak lagi diperlukan, kita hapus konfigurasinya
     tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id, 
-        quantization_config=quantization_config, 
-        device_map="auto"
-    )
+    model = AutoModelForCausalLM.from_pretrained(model_id)
     
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
+    # Flan-T5 menggunakan task "text2text-generation"
+    pipe = pipeline("text2text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
     return HuggingFacePipeline(pipeline=pipe)
 
 def create_vector_store(pdf_path):
