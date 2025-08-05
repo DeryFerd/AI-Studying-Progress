@@ -38,34 +38,56 @@ def create_vector_store(text_chunks, embedding_model):
     return vector_store
 
 def create_qa_chain(vector_store, llm):
-    """Membuat QA Chain dengan prompt kustom."""
+    """Membuat QA Chain dengan strategi Map-Reduce dan prompt kustom."""
     retriever = vector_store.as_retriever()
-    
-    prompt_template = """
-    Gunakan potongan-potongan konteks berikut untuk menjawab pertanyaan di akhir.
-    Jawablah dengan ringkas dan jelas dalam Bahasa Indonesia.
-    Jika Anda tidak tahu jawabannya berdasarkan konteks, katakan saja "Saya tidak menemukan jawaban di dalam dokumen."
 
+    # 1. Prompt untuk tahap "Map"
+    # Prompt ini akan diterapkan pada setiap potongan dokumen secara individual.
+    map_prompt_template = """
+    Gunakan potongan konteks berikut untuk menjawab pertanyaan di bawah.
+    
     Konteks:
     {context}
-
+    
     Pertanyaan:
     {question}
-
-    Jawaban Membantu:
+    
+    Jawaban ringkas berdasarkan konteks di atas:
     """
-    PROMPT = PromptTemplate(
-        template=prompt_template, 
+    MAP_PROMPT = PromptTemplate(
+        template=map_prompt_template, 
         input_variables=["context", "question"]
     )
+
+    # 2. Prompt untuk tahap "Reduce"
+    # Prompt ini akan menggabungkan semua jawaban dari tahap Map.
+    reduce_prompt_template = """
+    Pertanyaan awal adalah: "{question}"
+    Berikut adalah beberapa jawaban yang ditemukan dari potongan-potongan dokumen yang relevan:
+    ---
+    {summaries}
+    ---
+    Berdasarkan jawaban-jawaban di atas, rangkumlah menjadi satu jawaban akhir yang koheren, lengkap, dan dalam Bahasa Indonesia.
     
+    Jawaban Akhir yang Lengkap:
+    """
+    REDUCE_PROMPT = PromptTemplate(
+        template=reduce_prompt_template, 
+        input_variables=["summaries", "question"]
+    )
+
+    # 3. Membuat QA Chain dengan konfigurasi yang benar untuk map_reduce
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="map_reduce",
         retriever=retriever,
         return_source_documents=False, # Kita set False agar jawaban lebih ringkas
-        chain_type_kwargs={"prompt": PROMPT}
+        chain_type_kwargs={
+            "question_prompt": MAP_PROMPT,
+            "combine_prompt": REDUCE_PROMPT
+        }
     )
+    
     return qa_chain
 
 # =====================================================================================
