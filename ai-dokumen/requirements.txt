@@ -5,3 +5,4 @@ chromadb
 sentence-transformers
 PyMuPDF
 langchain-google-genai
+pysqlite3-binary
