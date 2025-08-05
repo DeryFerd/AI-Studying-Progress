@@ -61,7 +61,7 @@ def create_qa_chain(vector_store, llm):
     
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff",
+        chain_type="map_reduce",
         retriever=retriever,
         return_source_documents=False, # Kita set False agar jawaban lebih ringkas
         chain_type_kwargs={"prompt": PROMPT}
