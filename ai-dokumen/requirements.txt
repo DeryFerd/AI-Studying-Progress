@@ -1,0 +1,10 @@
+streamlit
+langchain
+langchain-community
+torch
+transformers
+sentence-transformers
+faiss-cpu
+PyMuPDF
+accelerate
+bitsandbytes
