@@ -13,6 +13,7 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # =====================================================================================
 # BAGIAN 1: FUNGSI-FUNGSI INTI (MESIN RAG KITA)
@@ -20,16 +21,11 @@ from langchain_community.vectorstores import Chroma
 
 @st.cache_resource
 def load_llm():
-    """Memuat LLM yang sangat ringan dan CPU-friendly (DistilGPT-2)."""
-    # Mengganti model ke yang paling kompatibel
-    model_id = "distilgpt2"
-    
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(model_id)
-    
-    # Task-nya kembali menjadi "text-generation"
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
-    return HuggingFacePipeline(pipeline=pipe)
+    """Memuat LLM dari Google Gemini API."""
+    # Kita hanya perlu menginisialisasi model dengan nama dan API key
+    # API key akan dibaca secara otomatis dari Streamlit Secrets
+    llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+    return llm
 
 # Versi baru yang menggunakan ChromaDB dan tugasnya lebih spesifik
 def create_vector_store(text_chunks, embedding_model):
@@ -39,23 +35,20 @@ def create_vector_store(text_chunks, embedding_model):
 
 # GANTI SELURUH FUNGSI create_qa_chain DENGAN VERSI FINAL INI
 
+# Ganti fungsi create_qa_chain lama
 def create_qa_chain(vector_store, llm):
-    """Membuat QA Chain dengan strategi STUFF yang super aman dan terkontrol."""
+    """Membuat QA Chain, kembali ke 'stuff' karena Gemini punya konteks besar."""
     
-    # Kita tetap batasi retriever untuk keamanan absolut
-    retriever = vector_store.as_retriever(search_kwargs={'k': 3})
+    # Kita kembali ke retriever yang lebih sederhana
+    retriever = vector_store.as_retriever()
 
-    # Kita kembali ke satu prompt simpel karena "stuff" hanya punya satu langkah
+    # Kita kembali ke satu prompt simpel
     prompt_template = """
-    Gunakan potongan konteks berikut untuk menjawab pertanyaan di akhir. Jawablah dengan ringkas dan jelas dalam Bahasa Indonesia.
-    Jika Anda tidak tahu jawabannya, katakan saja Anda tidak tahu.
-
+    Berdasarkan konteks yang diberikan, jawablah pertanyaan berikut dengan jelas dan ringkas dalam Bahasa Indonesia.
     Konteks:
     {context}
-
     Pertanyaan:
     {question}
-
     Jawaban:
     """
     PROMPT = PromptTemplate(
@@ -63,7 +56,7 @@ def create_qa_chain(vector_store, llm):
         input_variables=["context", "question"]
     )
 
-    # KEMBALI KE "STUFF"
+    # KEMBALI KE "STUFF" yang lebih cepat!
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         chain_type="stuff",
@@ -71,7 +64,6 @@ def create_qa_chain(vector_store, llm):
         return_source_documents=False,
         chain_type_kwargs={"prompt": PROMPT}
     )
-    
     return qa_chain
 # =====================================================================================
 # BAGIAN 2: TAMPILAN APLIKASI STREAMLIT
