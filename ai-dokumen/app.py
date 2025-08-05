@@ -81,25 +81,27 @@ with st.sidebar:
     st.header("Upload Dokumen Anda")
     uploaded_file = st.file_uploader("Pilih file PDF", type="pdf")
 
-    if uploaded_file is not None:
-        # Simpan file yang diupload ke disk sementara
-        temp_dir = "temp"
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-        
-        file_path = os.path.join(temp_dir, uploaded_file.name)
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        
-        # Tombol untuk memproses dokumen
-        if st.button("Proses Dokumen"):
+    # Ganti blok 'if uploaded_file' Anda dengan ini
+if uploaded_file is not None:
+    # Simpan file yang diupload ke disk sementara
+    temp_dir = "temp"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
+    file_path = os.path.join(temp_dir, uploaded_file.name)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    # Tombol untuk memproses dokumen
+    if st.button("Proses Dokumen"):
+        # PASTIKAN BLOK 'with' INI MENJOROK KE DALAM (ada 4 spasi)
         with st.spinner("Memproses dokumen... Ini bisa memakan waktu beberapa menit."):
             # 1. Load dan potong dokumen
             loader = PyMuPDFLoader(file_path)
             documents = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
             text_chunks = text_splitter.split_documents(documents)
-            
+
             # 2. Siapkan model embedding
             model_name = "sentence-transformers/all-MiniLM-L6-v2"
             device = 'cpu' # Pastikan menggunakan CPU
@@ -107,13 +109,13 @@ with st.sidebar:
 
             # 3. Buat Vector Store ChromaDB
             vector_store = create_vector_store(text_chunks, embedding_model)
-            
+
             # 4. Load LLM
             llm = load_llm()
-            
+
             # 5. Buat QA Chain dan simpan di session state
             st.session_state.qa_chain = create_qa_chain(vector_store, llm)
-            
+
             st.success("Dokumen berhasil diproses! Silakan ajukan pertanyaan.")
 
 # Kotak chat utama
