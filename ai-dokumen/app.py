@@ -8,7 +8,7 @@ from langchain.prompts import PromptTemplate
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 
 # =====================================================================================
 # BAGIAN 1: FUNGSI-FUNGSI INTI (MESIN RAG KITA)
@@ -28,19 +28,10 @@ def load_llm():
     pipe = pipeline("text2text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
     return HuggingFacePipeline(pipeline=pipe)
 
-def create_vector_store(pdf_path):
-    """Membuat vector store dari file PDF."""
-    loader = PyMuPDFLoader(pdf_path)
-    documents = loader.load()
-    
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    text_chunks = text_splitter.split_documents(documents)
-    
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    embedding_model = HuggingFaceEmbeddings(model_name=model_name, model_kwargs={'device': device})
-    
-    vector_store = FAISS.from_documents(text_chunks, embedding_model)
+# Versi baru yang menggunakan ChromaDB dan tugasnya lebih spesifik
+def create_vector_store(text_chunks, embedding_model):
+    """Membuat vector store ChromaDB dari potongan teks."""
+    vector_store = Chroma.from_documents(documents=text_chunks, embedding=embedding_model)
     return vector_store
 
 def create_qa_chain(vector_store, llm):
@@ -103,17 +94,28 @@ with st.sidebar:
         
         # Tombol untuk memproses dokumen
         if st.button("Proses Dokumen"):
-            with st.spinner("Memproses dokumen... Ini bisa memakan waktu beberapa menit."):
-                # 1. Buat Vector Store
-                vector_store = create_vector_store(file_path)
-                
-                # 2. Load LLM (ini akan menggunakan cache)
-                llm = load_llm()
-                
-                # 3. Buat QA Chain dan simpan di session state
-                st.session_state.qa_chain = create_qa_chain(vector_store, llm)
-                
-                st.success("Dokumen berhasil diproses! Silakan ajukan pertanyaan.")
+        with st.spinner("Memproses dokumen... Ini bisa memakan waktu beberapa menit."):
+            # 1. Load dan potong dokumen
+            loader = PyMuPDFLoader(file_path)
+            documents = loader.load()
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+            text_chunks = text_splitter.split_documents(documents)
+            
+            # 2. Siapkan model embedding
+            model_name = "sentence-transformers/all-MiniLM-L6-v2"
+            device = 'cpu' # Pastikan menggunakan CPU
+            embedding_model = HuggingFaceEmbeddings(model_name=model_name, model_kwargs={'device': device})
+
+            # 3. Buat Vector Store ChromaDB
+            vector_store = create_vector_store(text_chunks, embedding_model)
+            
+            # 4. Load LLM
+            llm = load_llm()
+            
+            # 5. Buat QA Chain dan simpan di session state
+            st.session_state.qa_chain = create_qa_chain(vector_store, llm)
+            
+            st.success("Dokumen berhasil diproses! Silakan ajukan pertanyaan.")
 
 # Kotak chat utama
 st.header("Ajukan Pertanyaan")
