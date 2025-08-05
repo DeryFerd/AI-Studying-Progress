@@ -129,8 +129,17 @@ user_question = st.text_input("Ketik pertanyaan Anda di sini...")
 if user_question:
     if st.session_state.qa_chain is not None:
         with st.spinner("AI sedang berpikir..."):
-            result = st.session_state.qa_chain.invoke({"query": user_question})
-            st.write("### Jawaban AI:")
-            st.write(result['result'])
+           # LANGKAH TAMBAHAN: Cek dulu apakah ada dokumen yang relevan
+            retriever = st.session_state.qa_chain.retriever
+            relevant_docs = retriever.get_relevant_documents(user_question)
+            
+            if not relevant_docs:
+                # Jika tidak ada dokumen relevan, beri pesan ke pengguna
+                st.warning("Maaf, saya tidak dapat menemukan bagian yang relevan di dalam dokumen untuk menjawab pertanyaan tersebut. Coba ajukan pertanyaan yang lebih spesifik mengenai isi dokumen.")
+            else:
+                # Jika ada, baru jalankan proses tanya jawab lengkap
+                result = st.session_state.qa_chain.invoke({"query": user_question})
+                st.write("### Jawaban AI:")
+                st.write(result['result'])
     else:
         st.warning("Mohon upload dan proses dokumen terlebih dahulu.")
